@@ -29,7 +29,6 @@ The app has a Django frontend and simple LangGraph app in `main.py`. The LangGra
 
 #### Install Dependencies
 
-For the backend:
 ```bash
 poetry install
 ```
