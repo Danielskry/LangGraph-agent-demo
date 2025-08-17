@@ -1,6 +1,6 @@
-# LangGraph Agent Demo 2024
+# LangGraph Agent Demo 2025
 
-A simplified web search agent using LangGraph, Pydantic, Tavily and Anthropic's Claude.
+A simple web search agent using LangGraph, Pydantic, Tavily and Anthropic's Claude.
 
 The app has a Django frontend and simple LangGraph app in `main.py`. The LangGraph app uses Pydantic models (classification) to decide when web search is needed.
 
