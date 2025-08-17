@@ -47,3 +47,7 @@ Once running, access the chat interface at http://localhost:8000 and try:
 
 - "What is the weather in Oslo?" ← Searches web
 - "Explain machine learning" ← Uses knowledge
+
+#### LangGraph graph
+
+<img width="204" height="597" alt="bilde" src="https://github.com/user-attachments/assets/48742ebb-b7f2-44f7-9308-8d19ef37d777" />
