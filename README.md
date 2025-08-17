@@ -38,7 +38,7 @@ poetry install
 
 Start the application with:
 ```bash
-python manage.py runserver
+poetry run python manage.py runserver
 ```
 
 #### Access the Interface
