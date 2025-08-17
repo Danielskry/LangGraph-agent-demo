@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>LangGraph Agent Demo</title>
+    <!-- Add marked.js for markdown support -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #eaf1fb; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        /* Add styles for markdown content */
+        .markdown-content code { background: #f0f2f5; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+        .markdown-content pre { background: #f0f2f5; padding: 12px; border-radius: 8px; overflow-x: auto; }
+        .markdown-content pre code { background: none; padding: 0; }
+        .markdown-content p { margin: 8px 0; }
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 { margin: 16px 0 8px 0; }
+        h1 { margin-top: 24px; color: #1877f2; letter-spacing: 1px; font-weight: 700; }
+    #chat-container { background: #fff; border-radius: 18px; box-shadow: 0 4px 24px rgba(24,119,242,0.08); width: 96%; max-width: 720px; padding: 20px; margin: 24px 0; display: flex; flex-direction: column; position: relative; }
+        #output { min-height: 320px; max-height: 520px; overflow-y: auto; background: #f7faff; border-radius: 14px; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; }
+        .output-placeholder { color: #b0b8c1; font-size: 1.05em; text-align: center; margin-top: 30%; font-style: italic; user-select: none; }
+        #chatbox { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
+        #message { flex: 1; padding: 12px 16px; border-radius: 28px; border: 1px solid #e1e8f5; font-size: 1em; background: #fbfdff; outline: none; }
+        button { padding: 10px 18px; border-radius: 20px; border: none; background: #1877f2; color: #fff; font-weight: 600; cursor: pointer; }
+        .chat-bubble { display: flex; gap: 12px; max-width: 85%; }
+        .chat-bubble.user { align-self: flex-end; justify-content: flex-end; }
+        .chat-bubble.ai { align-self: flex-start; justify-content: flex-start; }
+        .bubble-content { padding: 12px 16px; border-radius: 16px; background: #f4f6fa; box-shadow: 0 2px 8px rgba(24,119,242,0.06); }
+        .chat-bubble.user .bubble-content { background: linear-gradient(135deg,#1877f2,#42a5f5); color: #fff; }
+    /* thinking overlay - visible blue pill with spinner */
+    @keyframes pulse { 0% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.4); opacity: 0.6 } 100% { transform: scale(1); opacity: 1 } }
+    #thinking-placeholder { position: absolute; right: 18px; bottom: 22px; background: #1877f2; color: #fff; padding: 8px 14px; border-radius: 18px; font-weight: 600; box-shadow: 0 6px 18px rgba(24,119,242,0.12); z-index: 400; display: block; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity 180ms ease-in-out, transform 180ms ease-in-out; }
+    #thinking-placeholder .spinner { display: inline-block; width: 8px; height: 8px; background: #fff; border-radius: 50%; margin-right: 8px; vertical-align: middle; animation: pulse 1s infinite; }
+    #thinking-placeholder.show { opacity: 1; transform: translateY(0); }
+        .context-info { background: #eaf1fb; padding: 10px; border-radius: 10px; color: #1456b8; }
+    </style>
+</head>
+<body>
+    <h1>LangGraph Agent Demo</h1>
+    <div id="chat-container">
+        <div id="output"></div>
+    <div id="thinking-placeholder"></div>
+        <form id="chatbox" onsubmit="sendMessage(event)">
+            <input id="message" autocomplete="off" placeholder="Type your message..." />
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        // Minimal, robust chat UI logic
+        let chatHistory = [];
+
+        function renderChat() {
+            const out = document.getElementById('output');
+            out.innerHTML = '';
+            if (chatHistory.length === 0) {
+                const ph = document.createElement('div');
+                ph.className = 'output-placeholder';
+                ph.textContent = 'No messages yet. Start the conversation!';
+                out.appendChild(ph);
+                return;
+            }
+            chatHistory.forEach(m => {
+                if (m.context) {
+                    const ctx = document.createElement('div');
+                    ctx.className = 'context-info';
+                    ctx.innerHTML = m.context;
+                    out.appendChild(ctx);
+                }
+                const row = document.createElement('div');
+                row.className = 'chat-bubble ' + (m.sender === 'user' ? 'user' : 'ai');
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble-content' + (m.sender === 'ai' ? ' markdown-content' : '');
+                if (m.sender === 'ai') {
+                    bubble.innerHTML = marked.parse(m.text);
+                } else {
+                    bubble.textContent = m.text;
+                }
+                row.appendChild(bubble);
+                out.appendChild(row);
+            });
+            out.scrollTop = out.scrollHeight;
+        }
+
+        function setThinking(show) {
+            const el = document.getElementById('thinking-placeholder');
+            if (!el) return;
+            if (show) {
+                el.classList.add('show');
+                el.textContent = 'AI is thinking...';
+            } else {
+                el.classList.remove('show');
+                // keep text until hidden to avoid layout jump when shown again
+            }
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('message');
+            const text = input.value.trim();
+            if (!text) return;
+            chatHistory.push({ sender: 'user', text });
+            renderChat();
+            input.value = '';
+            setThinking(true);
+
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 65000);
+            try {
+                const resp = await fetch('/run-script/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'message=' + encodeURIComponent(text),
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+                const data = await resp.json();
+                setThinking(false);
+                if (data.output) {
+                    // Attempt to extract structured pieces if present
+                    let out = data.output;
+                    let context = null;
+                    // simple classification extraction
+                    const classMatch = out.match(/\[Debug\] Classification:(.*)/);
+                    if (classMatch) { context = '<strong>Classification:</strong>' + classMatch[1].trim(); out = out.replace(/\[Debug\] Classification:.*/, '').trim(); }
+                    chatHistory.push({ sender: 'ai', text: out, html: true, context });
+                } else if (data.error) {
+                    chatHistory.push({ sender: 'ai', text: 'Error: ' + data.error });
+                }
+                renderChat();
+            } catch (err) {
+                clearTimeout(timeout);
+                setThinking(false);
+                if (err.name === 'AbortError') {
+                    chatHistory.push({ sender: 'ai', text: 'Request timed out.' });
+                } else {
+                    chatHistory.push({ sender: 'ai', text: 'Request failed: ' + String(err) });
+                }
+                renderChat();
+            }
+        }
+
+        // initial render
+        renderChat();
+    </script>
+</body>
+</html>
+

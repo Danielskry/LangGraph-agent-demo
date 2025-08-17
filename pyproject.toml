@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "langgraph-agent-demo"
+version = "0.1.0"
+description = ""
+authors = ["Daniel Skryseth"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+langgraph = "^0.6.4"
+langchain-tavily = "^0.2.11"
+langgraph-checkpoint-sqlite = "^2.0.11"
+dotenv = "^0.9.9"
+langchain-openai = "^0.3.29"
+langchain-anthropic = "^0.3.18"
+django = ">=4.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
