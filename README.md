@@ -4,7 +4,7 @@ A simple web search agent using LangGraph, Pydantic, Tavily and Anthropic's Clau
 
 The app has a Django frontend and simple LangGraph app in `main.py`. The LangGraph app uses Pydantic models (classification) to decide when web search is needed.
 
-<img width="1015" height="760" alt="langgraph_agent_demo" src="https://github.com/user-attachments/assets/8343833d-0dbf-4bc5-a9f3-b2c417eac2a0" />
+<img width="507" height="380" alt="langgraph_agent_demo" src="https://github.com/user-attachments/assets/8343833d-0dbf-4bc5-a9f3-b2c417eac2a0" />
 
 
 ## Getting Started
